@@ -94,7 +94,6 @@ exports.updatePost = (req, res, next) => {
   const title = req.body.title;
   const content = req.body.content;
   let imageUrl = req.body.image;
-  console.log("ORIG IMG URL:", imageUrl);
 
   // Check for validation error
   error = validationResult(req);
@@ -110,13 +109,6 @@ exports.updatePost = (req, res, next) => {
     imageUrl = req.file.path.replace(/\\/g, "/"); // This is needed because backslash sometimes is used as an escape key
   }
 
-  // Check for existence of imageUrl
-  if (!imageUrl) {
-    const error = new Error("No image provided.");
-    error.statusCode = 422;
-    throw error;
-  }
-
   Post.findById(postId)
     .then((post) => {
       if (!post) {
@@ -125,8 +117,12 @@ exports.updatePost = (req, res, next) => {
         throw error;
       }
 
-      // Delete old image if a new updated imageUrl exist
-      if (imageUrl !== post.imageUrl) {
+      // Check for existence of imageUrl
+      // we are checking for equality to undefined because there's a bug in front end that would cause imageUrl to be undefined although we didn't pick any image
+      if (!imageUrl || imageUrl == "undefined") {
+        imageUrl = post.imageUrl;
+      } else if (imageUrl !== post.imageUrl) {
+        // Delete old image if a new updated imageUrl exist
         clearImage(post.imageUrl);
       }
 
