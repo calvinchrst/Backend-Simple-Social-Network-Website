@@ -5,12 +5,24 @@ const { validationResult } = require("express-validator");
 
 const Post = require("../models/post");
 
+const NR_POST_PER_PAGE = 2;
+
 exports.getPosts = (req, res, next) => {
+  const currentPage = req.query.page || 1;
+  let totalItems;
   Post.find()
+    .countDocuments()
+    .then((count) => {
+      totalItems = count;
+      return Post.find()
+        .skip((currentPage - 1) * NR_POST_PER_PAGE)
+        .limit(NR_POST_PER_PAGE);
+    })
     .then((posts) => {
       res.status(200).json({
         message: "Get all posts successfully",
         posts: posts,
+        totalItems: totalItems,
       });
     })
     .catch((err) => {
