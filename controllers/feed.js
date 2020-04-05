@@ -1,3 +1,6 @@
+const fs = require("fs");
+const path = require("path");
+
 const { validationResult } = require("express-validator");
 
 const Post = require("../models/post");
@@ -5,7 +8,7 @@ const Post = require("../models/post");
 exports.getPosts = (req, res, next) => {
   Post.find()
     .then((posts) => {
-      return res.status(200).json({
+      res.status(200).json({
         message: "Get all posts successfully",
         posts: posts,
       });
@@ -19,8 +22,8 @@ exports.getPosts = (req, res, next) => {
 };
 
 exports.createPost = (req, res, next) => {
-  title = req.body.title;
-  content = req.body.content;
+  const title = req.body.title;
+  const content = req.body.content;
 
   // Check for validation error
   error = validationResult(req);
@@ -33,13 +36,11 @@ exports.createPost = (req, res, next) => {
 
   // Check for file existence
   if (!req.file) {
-    console.log("CALVIN NO IMAGE PROVIDED");
     const error = new Error("No image provided.");
     error.statusCode = 422;
     throw error;
   }
-  const imageUrl = req.file.path.replace(/\\/g, "/");
-  console.log("FILE PATH:", req.file.path);
+  const imageUrl = req.file.path.replace(/\\/g, "/"); // This is needed because backslash sometimes is used as an escape key
 
   post = new Post({
     title: title,
@@ -52,7 +53,7 @@ exports.createPost = (req, res, next) => {
   post
     .save()
     .then((result) => {
-      return res.status(201).json({
+      res.status(201).json({
         message: "Post created successfully",
         post: result,
       });
@@ -66,10 +67,16 @@ exports.createPost = (req, res, next) => {
 };
 
 exports.getPost = (req, res, next) => {
-  postId = req.params.postId;
+  const postId = req.params.postId;
   Post.findById(postId)
     .then((post) => {
-      return res.status(200).json({
+      if (!post) {
+        const error = new Error("Could not find post");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      res.status(200).json({
         message: "Get post successfully",
         post: post,
       });
@@ -80,4 +87,70 @@ exports.getPost = (req, res, next) => {
       }
       next(err);
     });
+};
+
+exports.updatePost = (req, res, next) => {
+  const postId = req.params.postId;
+  const title = req.body.title;
+  const content = req.body.content;
+  let imageUrl = req.body.image;
+  console.log("ORIG IMG URL:", imageUrl);
+
+  // Check for validation error
+  error = validationResult(req);
+  if (!error.isEmpty()) {
+    const newError = new Error("Validation Error: Post data is incorrect");
+    newError.details = error.array();
+    newError.statusCode = 422;
+    throw newError;
+  }
+
+  // Check for updated file existence
+  if (req.file) {
+    imageUrl = req.file.path.replace(/\\/g, "/"); // This is needed because backslash sometimes is used as an escape key
+  }
+
+  // Check for existence of imageUrl
+  if (!imageUrl) {
+    const error = new Error("No image provided.");
+    error.statusCode = 422;
+    throw error;
+  }
+
+  Post.findById(postId)
+    .then((post) => {
+      if (!post) {
+        const error = new Error("Could not find post");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Delete old image if a new updated imageUrl exist
+      if (imageUrl !== post.imageUrl) {
+        clearImage(post.imageUrl);
+      }
+
+      // Update Post & Save
+      post.title = title;
+      post.content = content;
+      post.imageUrl = imageUrl;
+      return post.save();
+    })
+    .then((result) => {
+      res.status(200).json({
+        message: "Post updated",
+        post: result,
+      });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
+const clearImage = (filePath) => {
+  filePath = path.join(__dirname, "..", filePath);
+  fs.unlink(filePath, (err) => console.log(err));
 };
