@@ -31,10 +31,20 @@ exports.createPost = (req, res, next) => {
     throw newError;
   }
 
+  // Check for file existence
+  if (!req.file) {
+    console.log("CALVIN NO IMAGE PROVIDED");
+    const error = new Error("No image provided.");
+    error.statusCode = 422;
+    throw error;
+  }
+  const imageUrl = req.file.path.replace(/\\/g, "/");
+  console.log("FILE PATH:", req.file.path);
+
   post = new Post({
     title: title,
     content: content,
-    imageUrl: "images/headset.jpg",
+    imageUrl: imageUrl,
     creator: {
       name: "Calvin",
     },

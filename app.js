@@ -4,6 +4,7 @@ const fs = require("fs");
 const express = require("express");
 const bodyparser = require("body-parser");
 const mongoose = require("mongoose");
+const multer = require("multer");
 
 const feedRoutes = require("./routes/feed");
 
@@ -14,16 +15,40 @@ const configPath = "./db_config.json";
 const config = JSON.parse(fs.readFileSync(configPath, "UTF-8"));
 const MONGODB_URI = config.mongodb_connect_url;
 
-app.use("/images", express.static(path.join(__dirname, "images")));
+// Setup multer. This is used to accept image upload
+const fileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "images");
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now().toString() + "-" + file.originalname);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  if (
+    file.mimetype === "image/png" ||
+    file.mimetype === "image/jpg" ||
+    file.mimetype === "image/jpeg"
+  ) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
 
 // app.use(bodyparser.urlencoded());   // x-www-form-urleconded <form>
 app.use(bodyparser.json());
+app.use(
+  multer({ storage: fileStorage, fileFilter: fileFilter }).single("image")
+);
+app.use("/images", express.static(path.join(__dirname, "images")));
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
     "Access-Control-Allow-Methods",
-    "GET, POST, PUT, PATCH, DELETE"
+    "OPTIONS, GET, POST, PUT, PATCH, DELETE"
   );
   res.setHeader(
     "Access-Control-Allow-Headers",
