@@ -1,3 +1,4 @@
+const path = require("path");
 const fs = require("fs");
 
 const express = require("express");
@@ -12,6 +13,8 @@ const app = express();
 const configPath = "./db_config.json";
 const config = JSON.parse(fs.readFileSync(configPath, "UTF-8"));
 const MONGODB_URI = config.mongodb_connect_url;
+
+app.use("/images", express.static(path.join(__dirname, "images")));
 
 // app.use(bodyparser.urlencoded());   // x-www-form-urleconded <form>
 app.use(bodyparser.json());
