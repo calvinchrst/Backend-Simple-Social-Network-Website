@@ -146,7 +146,40 @@ exports.updatePost = (req, res, next) => {
     });
 };
 
+exports.deletePost = (req, res, next) => {
+  postId = req.params.postId;
+  Post.findById(postId)
+    .then((post) => {
+      if (!post) {
+        const error = new Error("Could not find post");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Check if the current user is the creator of the post
+
+      clearImage(post.imageUrl);
+      return Post.findByIdAndDelete(postId);
+    })
+    .then((result) => {
+      res.status(200).json({
+        message: "Post deleted",
+      });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
 const clearImage = (filePath) => {
   filePath = path.join(__dirname, "..", filePath);
-  fs.unlink(filePath, (err) => console.log(err));
+  fs.unlink(filePath, (err) => {
+    if (err) {
+      err.message = "Unable to delete image" + filePath;
+      throw err;
+    }
+  });
 };
