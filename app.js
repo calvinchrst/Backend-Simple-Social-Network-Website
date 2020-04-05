@@ -32,6 +32,15 @@ app.use((req, res, next) => {
 
 app.use("/feed", feedRoutes);
 
+app.use((error, req, res, next) => {
+  console.log(error);
+  statusCode = error.statusCode || 500;
+  res.status(statusCode).json({
+    message: error.message,
+    details: error.details,
+  });
+});
+
 mongoose
   .connect(MONGODB_URI)
   .then((result) => {

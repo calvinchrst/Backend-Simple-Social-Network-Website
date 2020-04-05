@@ -26,10 +26,10 @@ exports.createPost = (req, res, next) => {
   // Check for validation error
   error = validationResult(req);
   if (!error.isEmpty()) {
-    res.status(422).json({
-      message: "Validation Error: Post data is incorrect",
-      errors: error.array(),
-    });
+    const newError = new Error("Validation Error: Post data is incorrect");
+    newError.details = error.array();
+    newError.statusCode = 422;
+    throw newError;
   }
 
   post = new Post({
@@ -48,5 +48,10 @@ exports.createPost = (req, res, next) => {
         post: result,
       });
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
 };
