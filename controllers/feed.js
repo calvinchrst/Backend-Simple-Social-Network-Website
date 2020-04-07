@@ -4,6 +4,7 @@ const path = require("path");
 const { validationResult } = require("express-validator");
 
 const Post = require("../models/post");
+const User = require("../models/user");
 
 const NR_POST_PER_PAGE = 2;
 
@@ -54,20 +55,35 @@ exports.createPost = (req, res, next) => {
   }
   const imageUrl = req.file.path.replace(/\\/g, "/"); // This is needed because backslash sometimes is used as an escape key
 
-  post = new Post({
+  const post = new Post({
     title: title,
     content: content,
     imageUrl: imageUrl,
-    creator: {
-      name: "Calvin",
-    },
+    creator: req.userId,
   });
+
+  let Creator;
   post
     .save()
     .then((result) => {
+      // Update User object with this new post
+      return User.findById(req.userId);
+    })
+    .then((user) => {
+      if (!user) {
+        const error = new Error("User in request object not found");
+        error.statusCode = 500;
+        throw error;
+      }
+
+      creator = user;
+      return user.posts.push(post);
+    })
+    .then((result) => {
       res.status(201).json({
         message: "Post created successfully",
-        post: result,
+        post: post,
+        creator: { _id: creator._id.toString(), name: creator.name },
       });
     })
     .catch((err) => {
