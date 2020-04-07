@@ -1,9 +1,6 @@
-const fs = require("fs");
 const jwt = require("jsonwebtoken");
 
-// Set up config file which stores sensitive information
-const configPath = "./db_config.json";
-const config = JSON.parse(fs.readFileSync(configPath, "UTF-8"));
+const util = require("../util/util");
 
 module.exports = (req, res, next) => {
   const authHeader = req.get("Authorization");
@@ -21,11 +18,15 @@ module.exports = (req, res, next) => {
   // Check if token is valid
   let decodedToken;
   try {
-    decodedToken = jwt.verify(token, config.json_web_token_secret_key);
+    decodedToken = jwt.verify(
+      token,
+      util.getConfig().json_web_token_secret_key
+    );
   } catch (err) {
     err.statusCode = 500;
     throw err;
   }
+
   if (!decodedToken) {
     const newError = new Error("Not authenticated");
     newError.statusCode = 401;
