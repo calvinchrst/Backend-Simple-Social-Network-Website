@@ -176,7 +176,8 @@ exports.updatePost = (req, res, next) => {
 };
 
 exports.deletePost = (req, res, next) => {
-  postId = req.params.postId;
+  const postId = req.params.postId;
+  let creator;
   Post.findById(postId)
     .then((post) => {
       if (!post) {
@@ -186,9 +187,16 @@ exports.deletePost = (req, res, next) => {
       }
 
       // Check if the current user is the creator of the post
-
+      creator = post.creator;
       clearImage(post.imageUrl);
       return Post.findByIdAndDelete(postId);
+    })
+    .then((result) => {
+      return User.findById(creator);
+    })
+    .then((user) => {
+      user.posts.pull(postId);
+      return user.save();
     })
     .then((result) => {
       res.status(200).json({
