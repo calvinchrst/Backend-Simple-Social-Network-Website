@@ -77,7 +77,8 @@ exports.createPost = (req, res, next) => {
       }
 
       creator = user;
-      return user.posts.push(post);
+      user.posts.push(post);
+      return user.save();
     })
     .then((result) => {
       res.status(201).json({
