@@ -59,10 +59,13 @@ exports.createPost = async (req, res, next) => {
     }
     user.posts.push(post);
     await user.save();
+
+    // Update all clients on new post
     io.getIO().emit("posts", {
       action: "create",
       post: { ...post._doc, creator: { _id: req.userId, name: user.name } },
     });
+
     res.status(201).json({
       message: "Post created successfully",
       post: post,
@@ -112,7 +115,7 @@ exports.updatePost = async (req, res, next) => {
   }
 
   try {
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate("creator");
     if (!post) {
       const error = new Error("Could not find post");
       error.statusCode = 404;
@@ -133,6 +136,15 @@ exports.updatePost = async (req, res, next) => {
     post.content = content;
     post.imageUrl = imageUrl;
     await post.save();
+
+    // Update all clients on updated post
+    io.getIO().emit("posts", {
+      action: "update",
+      post: {
+        ...post._doc,
+        creator: { _id: req.userId, name: post.creator.name },
+      },
+    });
 
     res.status(200).json({
       message: "Post updated",
