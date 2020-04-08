@@ -1,5 +1,6 @@
 const { validationResult } = require("express-validator");
 
+const io = require("../socket");
 const Post = require("../models/post");
 const User = require("../models/user");
 
@@ -11,7 +12,11 @@ exports.getPosts = async (req, res, next) => {
   const currentPage = req.query.page || 1;
   try {
     const totalItems = await Post.find().countDocuments();
-    const posts = await Post.find();
+    const posts = await Post.find()
+      .populate("creator")
+      .sort({ createdAt: -1 })
+      .skip((currentPage - 1) * NR_POST_PER_PAGE)
+      .limit(NR_POST_PER_PAGE);
     res.status(200).json({
       message: "Get all posts successfully",
       posts: posts,
@@ -55,6 +60,13 @@ exports.createPost = async (req, res, next) => {
     }
     user.posts.push(post);
     await user.save();
+
+    // Update all clients on new post
+    io.getIO().emit("posts", {
+      action: "create",
+      post: { ...post._doc, creator: { _id: req.userId, name: user.name } },
+    });
+
     res.status(201).json({
       message: "Post created successfully",
       post: post,
@@ -104,7 +116,7 @@ exports.updatePost = async (req, res, next) => {
   }
 
   try {
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate("creator");
     if (!post) {
       const error = new Error("Could not find post");
       error.statusCode = 404;
@@ -125,6 +137,15 @@ exports.updatePost = async (req, res, next) => {
     post.content = content;
     post.imageUrl = imageUrl;
     await post.save();
+
+    // Update all clients on updated post
+    io.getIO().emit("posts", {
+      action: "update",
+      post: {
+        ...post._doc,
+        creator: { _id: req.userId, name: post.creator.name },
+      },
+    });
 
     res.status(200).json({
       message: "Post updated",
@@ -154,6 +175,13 @@ exports.deletePost = async (req, res, next) => {
     const user = await User.findById(post.creator);
     user.posts.pull(postId);
     await user.save();
+
+    // Update all clients on new post
+    io.getIO().emit("posts", {
+      action: "delete",
+      post: postId,
+    });
+
     res.status(200).json({
       message: "Post deleted",
     });
