@@ -5,11 +5,11 @@ const express = require("express");
 const bodyparser = require("body-parser");
 const mongoose = require("mongoose");
 const multer = require("multer");
-
-const feedRoutes = require("./routes/feed");
-const authRoutes = require("./routes/auth");
+const graphqlHttp = require("express-graphql");
 
 const app = express();
+const graphqlSchema = require("./graphql/schema");
+const graphqlResolver = require("./graphql/resolvers");
 
 // Set up config file which stores sensitive information
 const configPath = "./db_config.json";
@@ -58,8 +58,14 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/feed", feedRoutes);
-app.use("/auth", authRoutes);
+app.use(
+  "/graphql",
+  graphqlHttp({
+    schema: graphqlSchema,
+    rootValue: graphqlResolver,
+    graphiql: true,
+  })
+);
 
 app.use((error, req, res, next) => {
   console.log(error);
@@ -73,13 +79,7 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(MONGODB_URI)
   .then((result) => {
-    const server = app.listen(8080);
-
-    const io = require("./socket").init(server);
-    io.on("connetion", (socket) => {
-      console.log("Client Connected!");
-    });
-
+    app.listen(8080);
     console.log("Server Startup Done");
   })
   .catch((err) => console.log(err));
