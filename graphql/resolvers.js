@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const validator = require("validator");
 
 const User = require("../models/user");
+const util = require("../util/util");
 
 const NR_TIMES_HASHING = 12;
 
@@ -48,5 +49,28 @@ module.exports = {
     const createdUser = await newUser.save();
 
     return { ...createdUser._doc, _id: createdUser._id.toString() };
+  },
+  login: async function ({ email, password }) {
+    // Check if email exists in the system
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      const err = new Error("Wrong email & password combination.");
+      err.code = 401;
+      return err;
+    }
+
+    // Check if password is correct
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      const err = new Error("Wrong email & password combination.");
+      err.code = 401;
+      return err;
+    }
+
+    // Create jsonwebtoken
+    token = util.getJWTToken(email, user._id);
+
+    // Return result
+    return { token: token, userId: user._id.toString() };
   },
 };
