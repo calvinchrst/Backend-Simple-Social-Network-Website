@@ -10,6 +10,7 @@ const graphqlHttp = require("express-graphql");
 const app = express();
 const graphqlSchema = require("./graphql/schema");
 const graphqlResolver = require("./graphql/resolvers");
+const auth = require("./middleware/auth");
 
 // Set up config file which stores sensitive information
 const configPath = "./db_config.json";
@@ -63,6 +64,8 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(auth);
+
 app.use(
   "/graphql",
   graphqlHttp({
@@ -75,7 +78,7 @@ app.use(
       }
 
       const data = err.originalError.data;
-      const message = err.message || "An error occured.";
+      const message = err.message || "An error occurred.";
       const code = err.originalError.code || 500;
       return { message: message, status: code, data: data };
     },
@@ -84,11 +87,10 @@ app.use(
 
 app.use((error, req, res, next) => {
   console.log(error);
-  statusCode = error.statusCode || 500;
-  res.status(statusCode).json({
-    message: error.message,
-    details: error.details,
-  });
+  const status = error.statusCode || 500;
+  const message = error.message;
+  const data = error.data;
+  res.status(status).json({ message: message, data: data });
 });
 
 mongoose
