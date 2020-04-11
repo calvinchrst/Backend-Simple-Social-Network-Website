@@ -146,8 +146,9 @@ module.exports = {
     // Update the post
     post.title = postInput.title;
     post.content = postInput.content;
-    if (post.imageUrl !== "undefined") {
+    if (postInput.imageUrl !== "undefined") {
       post.imageUrl = postInput.imageUrl;
+      console.log("UPDATE PIC HAPPEN");
     }
     updatedPost = await post.save();
     return {
@@ -186,7 +187,9 @@ module.exports = {
     await user.save();
 
     // Remove image of the post
-    util.clearImage(post.imageUrl);
+    if (post.imageUrl !== "undefined") {
+      util.clearImage(post.imageUrl);
+    }
 
     // Delete the post
     await Post.findByIdAndDelete(postId);
