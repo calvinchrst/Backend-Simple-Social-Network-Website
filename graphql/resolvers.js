@@ -151,7 +151,7 @@ module.exports = {
     const post = await Post.findById(postId).populate("creator");
     if (!post) {
       const err = new Error("Post doesn't exist");
-      err.code = 500;
+      err.code = 404;
       return err;
     }
 
