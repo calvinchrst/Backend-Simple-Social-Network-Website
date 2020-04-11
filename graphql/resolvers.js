@@ -124,4 +124,37 @@ module.exports = {
       updatedAt: post.updatedAt.toISOString(),
     };
   },
+  updatePost: async function ({ postId, postInput }, req) {
+    util.throwErrorIfNotAuthenticated(req.isAuth);
+    util.checkValidInputForPost(postInput);
+
+    // Check if Post exist
+    const post = await Post.findById(postId).populate("creator");
+    if (!post) {
+      const err = new Error("Post doesn't exist");
+      err.code = 404;
+      return err;
+    }
+
+    // Only allow user who created the post to update this post
+    if (req.userId.toString() !== post.creator._id.toString()) {
+      const err = new Error("Not Authorized");
+      err.code = 401;
+      return err;
+    }
+
+    // Update the post
+    post.title = postInput.title;
+    post.content = postInput.content;
+    if (post.imageUrl !== "undefined") {
+      post.imageUrl = postInput.imageUrl;
+    }
+    updatedPost = await post.save();
+    return {
+      ...updatedPost._doc,
+      _id: updatedPost._id.toString(),
+      createdAt: updatedPost.createdAt.toISOString(),
+      updatedAt: updatedPost.updatedAt.toISOString(),
+    };
+  },
 };
