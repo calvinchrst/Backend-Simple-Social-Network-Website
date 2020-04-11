@@ -53,8 +53,17 @@ const getJWTToken = (email, userId) => {
   return token;
 };
 
+const throwErrorIfNotAuthenticated = (isAuthenticated) => {
+  if (!isAuthenticated) {
+    const error = new Error("Not authenticated!");
+    error.code = 401;
+    throw error;
+  }
+};
+
 exports.checkValidationError = checkValidationError;
 exports.clearImage = clearImage;
 exports.replaceBackslashWithSlash = replaceBackslashWithSlash;
 exports.getConfig = getConfig;
 exports.getJWTToken = getJWTToken;
+exports.throwErrorIfNotAuthenticated = throwErrorIfNotAuthenticated;

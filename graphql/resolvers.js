@@ -75,11 +75,8 @@ module.exports = {
     return { token: token, userId: user._id.toString() };
   },
   createPost: async function ({ postInput }, req) {
-    if (!req.isAuth) {
-      const error = new Error("Not authenticated!");
-      error.code = 401;
-      throw error;
-    }
+    util.throwErrorIfNotAuthenticated(req.isAuth);
+
     const errors = [];
     if (
       validator.isEmpty(postInput.title) ||
@@ -122,11 +119,7 @@ module.exports = {
     };
   },
   posts: async function ({ page }, req) {
-    if (!req.isAuth) {
-      const error = new Error("Not authenticated!");
-      error.code = 401;
-      throw error;
-    }
+    util.throwErrorIfNotAuthenticated(req.isAuth);
 
     if (!page) {
       page = 1;
