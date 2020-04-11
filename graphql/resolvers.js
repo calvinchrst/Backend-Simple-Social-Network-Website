@@ -192,4 +192,21 @@ module.exports = {
     await Post.findByIdAndDelete(postId);
     return true;
   },
+  getUser: async function (args, req) {
+    util.throwErrorIfNotAuthenticated(req.isAuth);
+
+    // Check if User Exist
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const err = new Error("User not found");
+      err.code = 404;
+      return err;
+    }
+
+    // Return user data
+    return {
+      ...user._doc,
+      _id: user._id.toString(),
+    };
+  },
 };
