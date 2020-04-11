@@ -157,4 +157,39 @@ module.exports = {
       updatedAt: updatedPost.updatedAt.toISOString(),
     };
   },
+  deletePost: async function ({ postId }, req) {
+    util.throwErrorIfNotAuthenticated(req.isAuth);
+
+    // Check if Post exist
+    const post = await Post.findById(postId);
+    if (!post) {
+      const err = new Error("Post doesn't exist");
+      err.code = 404;
+      return err;
+    }
+
+    // Only allow user who created the post to update this post
+    if (req.userId.toString() !== post.creator.toString()) {
+      const err = new Error("Not Authorized");
+      err.code = 401;
+      return err;
+    }
+
+    // Remove Post from User posts list
+    const user = await User.findById(post.creator);
+    if (!user) {
+      const err = new Error("User somehow doesn't exist.");
+      err.code = 404;
+      return err;
+    }
+    user.posts.pull(postId);
+    await user.save();
+
+    // Remove image of the post
+    util.clearImage(post.imageUrl);
+
+    // Delete the post
+    await Post.findByIdAndDelete(postId);
+    return true;
+  },
 };
