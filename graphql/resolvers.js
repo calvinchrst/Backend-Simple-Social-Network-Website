@@ -144,4 +144,22 @@ module.exports = {
       totalPosts: totalPosts,
     };
   },
+  getPost: async function ({ postId }, req) {
+    util.throwErrorIfNotAuthenticated(req.isAuth);
+
+    // Check if Post with such ID exist
+    const post = await Post.findById(postId).populate("creator");
+    if (!post) {
+      const err = new Error("Post doesn't exist");
+      err.code = 500;
+      return err;
+    }
+
+    return {
+      ...post._doc,
+      _id: post._id.toString(),
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString(),
+    };
+  },
 };
