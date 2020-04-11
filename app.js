@@ -11,11 +11,7 @@ const app = express();
 const graphqlSchema = require("./graphql/schema");
 const graphqlResolver = require("./graphql/resolvers");
 const auth = require("./middleware/auth");
-
-// Set up config file which stores sensitive information
-const configPath = "./db_config.json";
-const config = JSON.parse(fs.readFileSync(configPath, "UTF-8"));
-const MONGODB_URI = config.mongodb_connect_url;
+const util = require("./util/util");
 
 // Setup multer. This is used to accept image upload
 const fileStorage = multer.diskStorage({
@@ -94,7 +90,7 @@ app.use((error, req, res, next) => {
 });
 
 mongoose
-  .connect(MONGODB_URI)
+  .connect(util.getConfig().mongodb_connect_url)
   .then((result) => {
     app.listen(8080);
     console.log("Server Startup Done");
