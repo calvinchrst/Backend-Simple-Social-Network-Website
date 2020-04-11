@@ -1,20 +1,16 @@
 const path = require("path");
-const fs = require("fs");
 
 const express = require("express");
 const bodyparser = require("body-parser");
 const mongoose = require("mongoose");
 const multer = require("multer");
-
-const feedRoutes = require("./routes/feed");
-const authRoutes = require("./routes/auth");
+const graphqlHttp = require("express-graphql");
 
 const app = express();
-
-// Set up config file which stores sensitive information
-const configPath = "./db_config.json";
-const config = JSON.parse(fs.readFileSync(configPath, "UTF-8"));
-const MONGODB_URI = config.mongodb_connect_url;
+const graphqlSchema = require("./graphql/schema");
+const graphqlResolver = require("./graphql/resolvers");
+const auth = require("./middleware/auth");
+const util = require("./util/util");
 
 // Setup multer. This is used to accept image upload
 const fileStorage = multer.diskStorage({
@@ -55,31 +51,69 @@ app.use((req, res, next) => {
     "OPTIONS, GET, POST, PUT, PATCH, DELETE"
   );
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+
   next();
 });
 
-app.use("/feed", feedRoutes);
-app.use("/auth", authRoutes);
+app.use(auth);
 
-app.use((error, req, res, next) => {
-  console.log(error);
-  statusCode = error.statusCode || 500;
-  res.status(statusCode).json({
-    message: error.message,
-    details: error.details,
+app.put("/post-image", (req, res, next) => {
+  util.throwErrorIfNotAuthenticated(req.isAuth);
+  if (!req.file) {
+    return res.status(200).json({
+      message: "No file uploaded",
+    });
+  }
+
+  // TODO: NEED EDIT TESTING
+  if (req.body.oldPath) {
+    util.clearImage(req.body.oldPath);
+  }
+
+  // Replace file path
+  const imageUrl = util.replaceBackslashWithSlash(req.file.path); // This is needed because backslash sometimes is used as an escape key
+
+  res.status(201).json({
+    message: "File uploaded",
+    filePath: imageUrl,
   });
 });
 
+app.use(
+  "/graphql",
+  graphqlHttp({
+    schema: graphqlSchema,
+    rootValue: graphqlResolver,
+    graphiql: true,
+    formatError(err) {
+      if (!err.originalError) {
+        return err;
+      }
+
+      const data = err.originalError.data;
+      const message = err.message || "An error occurred.";
+      const code = err.originalError.code || 500;
+      return { message: message, status: code, data: data };
+    },
+  })
+);
+
+app.use((error, req, res, next) => {
+  console.log(error);
+  const status = error.statusCode || 500;
+  const message = error.message;
+  const data = error.data;
+  res.status(status).json({ message: message, data: data });
+});
+
 mongoose
-  .connect(MONGODB_URI)
+  .connect(util.getConfig().mongodb_connect_url)
   .then((result) => {
-    const server = app.listen(8080);
-
-    const io = require("./socket").init(server);
-    io.on("connetion", (socket) => {
-      console.log("Client Connected!");
-    });
-
+    app.listen(8080);
     console.log("Server Startup Done");
   })
   .catch((err) => console.log(err));
