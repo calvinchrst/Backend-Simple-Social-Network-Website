@@ -1,5 +1,4 @@
 const path = require("path");
-const fs = require("fs");
 
 const express = require("express");
 const bodyparser = require("body-parser");
@@ -61,6 +60,28 @@ app.use((req, res, next) => {
 });
 
 app.use(auth);
+
+app.put("/post-image", (req, res, next) => {
+  util.throwErrorIfNotAuthenticated(req.isAuth);
+  if (!req.file) {
+    return res.status(200).json({
+      message: "No file uploaded",
+    });
+  }
+
+  // TODO: NEED EDIT TESTING
+  if (req.body.oldPath) {
+    util.clearImage(req.body.oldPath);
+  }
+
+  // Replace file path
+  const imageUrl = util.replaceBackslashWithSlash(req.file.path); // This is needed because backslash sometimes is used as an escape key
+
+  res.status(201).json({
+    message: "File uploaded",
+    filePath: imageUrl,
+  });
+});
 
 app.use(
   "/graphql",
