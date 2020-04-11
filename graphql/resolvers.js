@@ -209,4 +209,23 @@ module.exports = {
       _id: user._id.toString(),
     };
   },
+  updateStatus: async function ({ newStatus }, req) {
+    util.throwErrorIfNotAuthenticated(req.isAuth);
+
+    // Check if User Exist
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const err = new Error("User not found");
+      err.code = 404;
+      return err;
+    }
+
+    // Update status
+    user.status = newStatus;
+    const updatedUser = await user.save();
+    return {
+      ...updatedUser._doc,
+      _id: updatedUser._id.toString(),
+    };
+  },
 };
