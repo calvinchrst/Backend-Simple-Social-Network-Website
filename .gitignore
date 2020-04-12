@@ -25,4 +25,5 @@ yarn-error.log*
 
 #Personal
 db_config.json
+nodemon.json
 
