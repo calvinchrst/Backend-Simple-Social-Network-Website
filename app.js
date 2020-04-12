@@ -16,6 +16,12 @@ const graphqlResolver = require("./graphql/resolvers");
 const auth = require("./middleware/auth");
 const util = require("./util/util");
 
+// Check if images folder exist. If not create it
+images_filepath = path.join(__dirname, "images");
+if (!fs.existsSync(images_filepath)) {
+  fs.mkdirSync(images_filepath);
+}
+
 // Setup multer. This is used to accept image upload
 const fileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
