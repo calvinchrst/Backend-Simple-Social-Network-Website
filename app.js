@@ -111,7 +111,7 @@ app.use((error, req, res, next) => {
 });
 
 mongoose
-  .connect(util.getConfig().mongodb_connect_url)
+  .connect(process.env.MONGODB_URI)
   .then((result) => {
     app.listen(8080);
     console.log("Server Startup Done");
