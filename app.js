@@ -126,7 +126,7 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(process.env.MONGODB_URI)
   .then((result) => {
-    app.listen(8080);
+    app.listen(process.env.PORT || 8080);
     console.log("Server Startup Done");
   })
   .catch((err) => console.log(err));
