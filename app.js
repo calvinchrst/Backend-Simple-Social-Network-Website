@@ -1,10 +1,14 @@
 const path = require("path");
+const fs = require("fs");
 
 const express = require("express");
 const bodyparser = require("body-parser");
 const mongoose = require("mongoose");
 const multer = require("multer");
 const graphqlHttp = require("express-graphql");
+const helmet = require("helmet");
+const compression = require("compression");
+const morgan = require("morgan");
 
 const app = express();
 const graphqlSchema = require("./graphql/schema");
@@ -36,6 +40,15 @@ const fileFilter = (req, file, cb) => {
     cb(null, false);
   }
 };
+
+// Additional Middleware for security & logging
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, "access.log"),
+  { flags: "a" }
+);
+app.use(helmet());
+app.use(compression());
+app.use(morgan("combined", { stream: accessLogStream }));
 
 // app.use(bodyparser.urlencoded());   // x-www-form-urleconded <form>
 app.use(bodyparser.json());
