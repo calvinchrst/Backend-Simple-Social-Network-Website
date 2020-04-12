@@ -34,20 +34,13 @@ const replaceBackslashWithSlash = (string) => {
   return string.replace(/\\/g, "/");
 };
 
-// Get config file which stores sensitive information
-const configPath = "./db_config.json";
-const config = JSON.parse(fs.readFileSync(configPath, "UTF-8"));
-const getConfig = () => {
-  return config;
-};
-
 const getJWTToken = (email, userId) => {
   const token = jwt.sign(
     {
       email: email,
       userId: userId.toString(),
     },
-    getConfig().json_web_token_secret_key,
+    process.env.JSON_WEB_TOKEN_SECRET_KEY,
     { expiresIn: "1h" }
   );
 
@@ -110,7 +103,6 @@ const checkValidInputForUser = (userInput) => {
 exports.checkValidationError = checkValidationError;
 exports.clearImage = clearImage;
 exports.replaceBackslashWithSlash = replaceBackslashWithSlash;
-exports.getConfig = getConfig;
 exports.getJWTToken = getJWTToken;
 exports.throwErrorIfNotAuthenticated = throwErrorIfNotAuthenticated;
 exports.checkValidInputForPost = checkValidInputForPost;
