@@ -4,7 +4,6 @@ const fs = require("fs");
 const express = require("express");
 const bodyparser = require("body-parser");
 const mongoose = require("mongoose");
-const multer = require("multer");
 const graphqlHttp = require("express-graphql");
 const helmet = require("helmet");
 const compression = require("compression");
@@ -15,37 +14,7 @@ const graphqlSchema = require("./graphql/schema");
 const graphqlResolver = require("./graphql/resolvers");
 const auth = require("./middleware/auth");
 const util = require("./util/util");
-
-// Check if images folder exist. If not create it
-images_filepath = path.join(__dirname, "images");
-if (!fs.existsSync(images_filepath)) {
-  fs.mkdirSync(images_filepath);
-}
-
-// Setup multer. This is used to accept image upload
-const fileStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "images");
-  },
-  filename: (req, file, cb) => {
-    cb(
-      null,
-      new Date().toISOString().split(":").join("_") + "-" + file.originalname
-    );
-  },
-});
-
-const fileFilter = (req, file, cb) => {
-  if (
-    file.mimetype === "image/png" ||
-    file.mimetype === "image/jpg" ||
-    file.mimetype === "image/jpeg"
-  ) {
-    cb(null, true);
-  } else {
-    cb(null, false);
-  }
-};
+const { getAWSUpload } = require("./util/uploadImage");
 
 // Additional Middleware for security & logging
 const accessLogStream = fs.createWriteStream(
@@ -56,13 +25,9 @@ app.use(helmet());
 app.use(compression());
 app.use(morgan("combined", { stream: accessLogStream }));
 
-// app.use(bodyparser.urlencoded());   // x-www-form-urleconded <form>
 app.use(bodyparser.json());
-app.use(
-  multer({ storage: fileStorage, fileFilter: fileFilter }).single("image")
-);
-app.use("/images", express.static(path.join(__dirname, "images")));
 
+// Set headers that allows CORS
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
@@ -80,7 +45,7 @@ app.use((req, res, next) => {
 
 app.use(auth);
 
-app.put("/post-image", (req, res, next) => {
+app.put("/post-image", getAWSUpload().single("image"), (req, res, next) => {
   util.throwErrorIfNotAuthenticated(req.isAuth);
   if (!req.file) {
     return res.status(200).json({
@@ -88,17 +53,13 @@ app.put("/post-image", (req, res, next) => {
     });
   }
 
-  // TODO: NEED EDIT TESTING
   if (req.body.oldPath) {
     util.clearImage(req.body.oldPath);
   }
 
-  // Replace file path
-  const imageUrl = util.replaceBackslashWithSlash(req.file.path); // This is needed because backslash sometimes is used as an escape key
-
   res.status(201).json({
     message: "File uploaded",
-    filePath: imageUrl,
+    filePath: req.file.location,
   });
 });
 
