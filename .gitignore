@@ -27,3 +27,4 @@ yarn-error.log*
 db_config.json
 nodemon.json
 
+access.log
