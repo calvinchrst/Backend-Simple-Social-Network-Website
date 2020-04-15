@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/user");
 const Post = require("../models/post");
 const util = require("../util/util");
+const { clearImage } = require("../util/image");
 
 const NR_TIMES_HASHING = 12;
 
@@ -188,7 +189,7 @@ module.exports = {
 
     // Remove image of the post
     if (post.imageUrl !== "undefined") {
-      util.clearImage(post.imageUrl);
+      clearImage(post.imageUrl);
     }
 
     // Delete the post

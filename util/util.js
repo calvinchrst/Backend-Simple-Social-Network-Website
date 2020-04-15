@@ -18,18 +18,6 @@ const checkValidationError = (req, validation_error_message) => {
   }
 };
 
-const clearImage = (filePath) => {
-  // Delete image given in the filepath
-
-  filePath = path.join(__dirname, "..", filePath);
-  fs.unlink(filePath, (err) => {
-    if (err) {
-      err.message = "Unable to delete image" + filePath;
-      throw err;
-    }
-  });
-};
-
 const replaceBackslashWithSlash = (string) => {
   return string.replace(/\\/g, "/");
 };
@@ -101,7 +89,6 @@ const checkValidInputForUser = (userInput) => {
 };
 
 exports.checkValidationError = checkValidationError;
-exports.clearImage = clearImage;
 exports.replaceBackslashWithSlash = replaceBackslashWithSlash;
 exports.getJWTToken = getJWTToken;
 exports.throwErrorIfNotAuthenticated = throwErrorIfNotAuthenticated;

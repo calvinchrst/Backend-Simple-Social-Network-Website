@@ -14,7 +14,7 @@ const graphqlSchema = require("./graphql/schema");
 const graphqlResolver = require("./graphql/resolvers");
 const auth = require("./middleware/auth");
 const util = require("./util/util");
-const { getAWSUpload } = require("./util/uploadImage");
+const { getAWSUpload, clearImage } = require("./util/image");
 
 // Additional Middleware for security & logging
 const accessLogStream = fs.createWriteStream(
@@ -54,7 +54,7 @@ app.put("/post-image", getAWSUpload().single("image"), (req, res, next) => {
   }
 
   if (req.body.oldPath) {
-    util.clearImage(req.body.oldPath);
+    clearImage(req.body.oldPath);
   }
 
   res.status(201).json({
